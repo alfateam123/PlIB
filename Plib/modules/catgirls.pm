@@ -43,11 +43,11 @@ sub atWhile {
 
 	my $info;
 	if ($nick and $ident and $host and $info = $botClass->matchMsg ($sent)){
-		if ($info->{"message"} =~ /^I want a catgirl!$/i 
-		    or $info->{"message"} =~ /nyaa\?/i
-		    or $info->{"message"} =~ /A catgirl is fine too!/i
+		if ($info->{"message"} =~ /I want a catgirl( from (.*)){0,1}!$/i 
+		    or $info->{"message"} =~ /nyaa( from (.*)){0,1}\?/i
+		    or $info->{"message"} =~ /A catgirl is fine too( from (.*)){0,1}!/i
 		    ) {
-			  $botClass->sendMsg($info->{"chan"}, randomCatgirl());
+			  $botClass->sendMsg($info->{"chan"}, randomCatgirl($1, $2));
 	    }
 	    elsif ($info->{"message"} =~ /Check a catgirl! (.*)/i){
 	    	my $lostCatgirl = $1;
@@ -89,14 +89,14 @@ sub atWhile {
 	    {
 	    	#the help
 	    	$botClass->sendMsg($info->{"chan"}, "Commands you can issue:");
-	    	$botClass->sendMsg($info->{"chan"}, "*) nyaa? | I want a catgirl! | A catgirl is fine too : get a random catgirl");
+	    	$botClass->sendMsg($info->{"chan"}, "*) nyaa? | I want a catgirl! | A catgirl is fine too [from [Tumblr name]] : get a random catgirl. if specified, only catgirls from the given source will be selected.");
 	   		$botClass->sendMsg($info->{"chan"}, "*) Reload the catgirls! : reload the archive. useful for long-running bots");
 	   		$botClass->sendMsg($info->{"chan"}, "*) Get older catgirls! : finds moar catgirls");
         $botClass->sendMsg($info->{"chan"}, "*) Gimme the sources! : lists the sources ");
         $botClass->sendMsg($info->{"chan"}, "*) Add a source! [RSS Tumblr Feed] : adds a source to the sources");
         $botClass->sendMsg($info->{"chan"}, "*) Remove a source! [Tumblr name] : removes a source from the sources. example for \"Tumblr name\": http://fredrin.tumblr.com --> fredrin");
 	   		$botClass->sendMsg($info->{"chan"}, "*) Check a catgirl! [url] : for debugging purposes. if in doubt, try launching 'Reload the catgirls!' command");
-	    }
+      }
   }
 }
 
@@ -185,19 +185,53 @@ sub loadCatgirls{
 }
 
 sub randomCatgirl{
+  my $got_request=shift;
+  my $requested_source=shift;
+  $requested_source = lc $requested_source;
+
 	my $posts_length=scalar @posts;
 	return "WTF" if $posts_length<1;
 
-    my $index=int(rand($posts_length));
+  #now we accept requests.
+  if ($got_request ne ''){
+  return "$requested_source is not even a source!" unless findSource("http://$requested_source.tumblr.com/rss")>-1;
+  }
+
+  #I needed a way to not rewrite the same code twice.
+  #just get the first rand() result if the user did not
+  #requested a source, and search more if user requested
+  #a source and the retrieved one is not ok.
+  #also, the condition on $index_counter is necessary
+  #to avoid endless iteration in case we extracted
+  #all the posts of a given source.
+  my $index=-1;
+  my $index_counter=0;
+  do{
+    $index=int(rand($posts_length));
     #we want link_to_original (link to tumblr), and
     #we know that link_to_original is in even positions.
-    $index-- if $index&1; 
+    $index-- if $index&1;
 
-    my $message=$posts[$index] . ' (' . $posts[$index+1] . ')';
+    $index_counter++;
+  }while (
+    #if user didn't ask, this will cut at first iteration
+    $got_request ne '' and $requested_source ne ''
+    #user asked and it's from the requested source [index+1 is the human-readable url]
+    and not $posts[$index+1] =~ /$requested_source/
+    #user asked and we're not searching unicorns
+    and $index_counter<$posts_length
+    );
 
-    #done in order to avoid "reposts"
-    push(@shownPosts, $posts[$index]);
-    push(@shownPosts, $posts[$index+1]);
+  my $message="";
+  unless ($posts[$index+1] =~ /$requested_source/)
+  {
+    $message="We are very sorry, we didn't find anything at $requested_source. please, have this: "
+  }
+  $message.=$posts[$index] . ' (' . $posts[$index+1] . ')';
+
+  #done in order to avoid "reposts"
+  push(@shownPosts, $posts[$index]);
+  push(@shownPosts, $posts[$index+1]);
 	splice @posts, $index, 2; #we have to remove the tumblr link too.
 
 	#doing some checks
