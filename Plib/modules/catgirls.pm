@@ -223,9 +223,11 @@ sub randomCatgirl{
     );
 
   my $message="";
-  unless ($posts[$index+1] =~ /$requested_source/)
-  {
-    $message="We are very sorry, we didn't find anything at $requested_source. please, have this: "
+  if (defined $got_request){
+    unless ($posts[$index+1] =~ /$requested_source/)
+    {
+      $message="We are very sorry, we didn't find anything at $requested_source. please, have this: "
+    }
   }
   $message.=$posts[$index] . ' (' . $posts[$index+1] . ')';
 
