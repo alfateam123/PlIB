@@ -1,3 +1,21 @@
-fredrin
-nocatgirls
-yuriyeah
+{
+    "fredrin" : {
+        "source_type" : "tumblr",
+        "nsfw" : "NOT_AT_ALL"
+    },
+
+    "nocatgirls" : {
+        "source_type" : "tumblr",
+        "nsfw" : "NOT_AT_ALL"
+    },
+
+    "yuriyeah" : {
+        "source_type" : "tumblr",
+        "nsfw" : "MAYBE"
+    },
+
+    "kitsunemimi" : {
+        "source_type" : "reddit",
+        "nsfw" : "MAYBE"
+    },
+}
