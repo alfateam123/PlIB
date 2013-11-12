@@ -67,7 +67,7 @@ sub atWhile {
                     $unloaded_msg .=" $bad_source ~";
                 }
                 $unloaded_msg =~ s/ ~$/. /;
-                $unloaded_msg.= "We are sad, you can't see all the catgirls you requested. Try to fix the sources using \"remove a source!\" and \"add a source!\"";
+                $unloaded_msg.= "We are sad, you can\'t see all the catgirls you requested. Try to fix the sources using \"remove a source!\" and \"add a source!\"";
                 $botClass->sendMsg($info->{"chan"}, $unloaded_msg);
             }
         #end bugfix #5
@@ -79,7 +79,7 @@ sub atWhile {
         {
             $botClass->sendMsg($info->{"chan"}, "The sources are: ".printSources());
         }
-        elsif($info->{"message"} =~ /Add a source! (.*) (false|true){0,1}/i){
+        elsif($info->{"message"} =~ /Add a source! (.*)( nsfw){0,1}/i){
             $botClass->sendMsg($info->{"chan"}, addSource($1, $2));
         }
         elsif($info->{"message"} =~ /Remove a source! (.*)/i){
@@ -135,6 +135,7 @@ sub loadCatgirls{
         };
         if ($@)
         {
+            print "hey, failed! ".buildUrl($source);
             push(@unloaded_sources, $source);
             next; 
         }
@@ -145,8 +146,8 @@ sub loadCatgirls{
             my $cat_image_link='no es fake, senor!';
             my $isgoodpost = 0;
 
-            $cat_image_link, $isgoodpost = extractFromReddit($post) if $source_type eq 'reddit';
-            $cat_image_link, $isgoodpost = extractFromTumblr($post) if $source_type eq 'tumblr';
+            ($cat_image_link, $isgoodpost) = extractFromReddit($post) if $source_type eq 'reddit';
+            ($cat_image_link, $isgoodpost) = extractFromTumblr($post) if $source_type eq 'tumblr';
         
             push (@posts, ($cat_image_link, $post->guid)) if $isgoodpost; #@cat);
         }
@@ -179,13 +180,14 @@ sub loadCatgirls{
 sub randomCatgirl{
     my $got_request=shift;
     my $requested_source=shift;
-    $requested_source = lc $requested_source;
+    $requested_source = lc $requested_source if $requested_source; #avoiding warnings
 
     my $posts_length=scalar @posts;
     return "WTF" if $posts_length<1;
 
     #now we accept requests.
-    if ($got_request ne ''){
+    #if ($got_request ne ''){
+    if (defined $got_request){
     #return "$requested_source is not even a source!" unless findSource("http://$requested_source.tumblr.com/rss")>-1;
     return "$requested_source is not even a source!" unless exists $sources->{$requested_source};
     }
@@ -218,7 +220,7 @@ sub randomCatgirl{
     if (defined $got_request){
         unless ($posts[$index+1] =~ /$requested_source/)
         {
-            $message="We are very sorry, we didn't find anything at $requested_source. please, have this: "
+            $message="We are very sorry, we didn\'t find anything at $requested_source. please, have this: ";
        }
     }
     $message.=$posts[$index] . ' (' . $posts[$index+1] . ')';
@@ -241,7 +243,7 @@ sub printSources{
     foreach my $source_name (keys $sources)
     {
         chomp $source_name;
-        my $source_type = $sources->{$source_name}['source_type']; #maybe syntax error here.
+        my $source_type = $sources->{$source_name}{'source_type'}; #nope.
         #$source =~ m/http:\/\/(.*)\.tumblr\.com\/rss/;
         $sourceList.="$source_name on $source_type ~ "; #"$1 ($source) ~ ";
     }
@@ -251,41 +253,50 @@ sub printSources{
 
 sub loadSources{
     #in this new branch, this file is now formatted as JSON
-    open (SOURCES, "<", "./Plib/modules/databases/catgirls/sources.txt") || return ("can't read the sources!",);
-    my $sources_content=join " ", <SOURCES>;
-    my $read_sources = decode_json $sources_content;
     
+    open (SOURCES, '<', './Plib/modules/databases/catgirls/sources.txt') or return ('can\'t read the sources!', ">_>");
+    my @faglines = <SOURCES>;
+    close SOURCES;
+    my $sources_content=join('', @faglines);
+    my $read_sources = decode_json $sources_content;
     return $read_sources;
 }
 
 sub addSource{
 	#TODO: this method needs a bit of work
+    print "ok, called addSource!";
     my $newSource=shift;
     my $newsourcensfw=shift;
 
     $newSource = lc $newSource; #<Robertof>: "dat case sensitiveness!" 
     $newSource =~ s/^\s+|\s+$//g; #trimming ftw
-    $newsourcensfw = 'NOT_AT_ALL' unless $newsourcensfw ne '';
+    $newsourcensfw = 'NOT_AT_ALL' unless not defined $newsourcensfw; #$newsourcensfw ne '';
 
     my $newsourcetype = 'tumblr'; #leaving the default behaviour
-    $newsourcetype = 'reddit' if $newSource =~ /http\:\/\/reddit\.com\/r\/([a-z_\-0-9]*)/i;
-    $newsourcetype = 'tumblr' if $newSource =~ /http:\/\/(.*)\.tumblr\.com/i;
-
+    if ($newSource =~ /http\:\/\/reddit\.com\/r\/([a-z_\-0-9]*)/i)
+    {
+        $newsourcetype = 'reddit';
+        $newSource = $1;
+    }
+    if ($newSource =~ /http:\/\/(.*)\.tumblr\.com/i)
+    {
+        $newsourcetype = 'tumblr';
+        $newSource = $1;
+    }
     #return "JUST THE TUMBLR NAME, YOU SMART ASS!" if $newSource =~ /^http/;
     return "$newSource is already a source!" if exists $sources->{$newSource}; #findSource("http://$newSource.tumblr.com/rss")>-1;
 
     #push @sources, "http://$newSource.tumblr.com/rss";
-    $sources->{$newSource} = (
+    $sources->{$newSource} = {#(
     	                'source_type' => $newsourcetype,
-    	                'nsfw' => $newsourcensfw
-    	                ); 
+    	                'nsfw' => $newsourcensfw}; #); 
     
-    open SOURCES, ">>", "./Plib/modules/databases/catgirls/sources.txt" or
-        return "can't open the source database!";
-    print SOURCES $newSource."\n";
+    open SOURCES, ">", "./Plib/modules/databases/catgirls/sources.txt" or
+        return "can\'t open the source database!";
+    print SOURCES encode_json $sources; #$newSource."\n";
     close SOURCES;
     #bugfix #6 start
-    return "We'll look for catgirls there. Thanks for your suggestion!";
+    return "We\'ll look for catgirls there. Thanks for your suggestion!";
     #end bugfix #6
 }
 
@@ -300,13 +311,13 @@ sub removeSource{
     return "$oldSource is not even a source!" unless exists $sources->{$oldSource};
 
     delete $sources->{$oldSource};
-    open SOURCES, ">", "./Plib/modules/databases/catgirls/sources.txt" or return "can't open the source database!";
+    open SOURCES, ">", "./Plib/modules/databases/catgirls/sources.txt" or return "can\'t open the source database!";
     #foreach my $source (@sources)
     #{
     #    $source =~ m/http:\/\/(.*)\.tumblr\.com\/rss/;
     #    print SOURCES $1."\n";
     #}
-    print encode_json $sources; 
+    print SOURCES encode_json $sources; 
     close SOURCES;
     #bugfix #6 start
     return "We'll no longer look for catgirls there anymore. Thanks for your suggestion!";
@@ -335,16 +346,17 @@ sub isolateSource{
 }
 #end bugfix #5
 
-sub buildUrl{
-	my $source_name=shift;
-	my $mah_source_type = lc $sources->{$source_name}->{'source_type'};
-	"http://reddit.com/r/$source_name.rss" if $mah_source_type eq 'reddit';
-	"http://$source_name.tumblr.com/rss"   if $mah_source_type eq 'tumblr';
-	"wtf"; #our default
-}
 
 ########################################################################################
 ####################### extractions from sources #######################################
+sub buildUrl{
+	my $source_name=shift;
+	my $mah_source_type = lc $sources->{$source_name}->{'source_type'};
+	return "http://reddit.com/r/$source_name.rss" if $mah_source_type eq 'reddit';
+	return "http://$source_name.tumblr.com/rss"   if $mah_source_type eq 'tumblr';
+	return "wtf"; #our default
+}
+
 sub extractFromReddit{
 	my $post = shift;
 	my $title = $post->title;
