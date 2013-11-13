@@ -359,9 +359,11 @@ sub buildUrl{
 
 sub extractFromReddit{
 	my $post = shift;
-	my $title = $post->title;
+    #this regex will break when reddit will change its RSS rendering.
+    #until that moment... thank you for the catgirls, Alien!
+    $post->description =~ /<br\/> <a href="(.*)">\[link\]/;
 
-	return ($title, 1);
+    return ($post->title ." ". $1, 1);
 	#return ('fake', 0);
 }
 
