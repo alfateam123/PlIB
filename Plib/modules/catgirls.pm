@@ -10,6 +10,8 @@ use warnings;
 use JSON;
 use XML::FeedPP;
 use List::Util qw(shuffle); 
+use LWP::Simple; #for tumblr 1280 image test
+
 my $hasLoaded=0;
 my @posts;
 my @shownPosts;
@@ -88,14 +90,13 @@ sub atWhile {
         elsif ($info->{"message"} =~ /^CATGIRLS!$/i)
         {
             #the help
-            $botClass->sendMsg($info->{"chan"}, "moar sources branch");
             $botClass->sendMsg($info->{"chan"}, "Commands you can issue:");
-            $botClass->sendMsg($info->{"chan"}, "*) nyaa? | I want a catgirl! | A catgirl is fine too [from [Tumblr name]] : get a random catgirl. if specified, only catgirls from the given source will be selected.");
+            $botClass->sendMsg($info->{"chan"}, "*) nyaa? | I want a catgirl! | A catgirl is fine too [from [source name]] : get a random catgirl. if specified, only catgirls from the given source will be selected.");
             $botClass->sendMsg($info->{"chan"}, "*) Reload the catgirls! : reload the archive. useful for long-running bots");
             $botClass->sendMsg($info->{"chan"}, "*) Get older catgirls! : finds moar catgirls");
             $botClass->sendMsg($info->{"chan"}, "*) Gimme the sources! : lists the sources ");
-            $botClass->sendMsg($info->{"chan"}, "*) Add a source! [RSS Tumblr Feed] : adds a source to the sources");
-            $botClass->sendMsg($info->{"chan"}, "*) Remove a source! [Tumblr name] : removes a source from the sources. example for \"Tumblr name\": http://fredrin.tumblr.com --> fredrin");
+            $botClass->sendMsg($info->{"chan"}, "*) Add a source! [RSS Feed] : adds a source to the sources. if only a name is given, it will searched on Tumblr.");
+            $botClass->sendMsg($info->{"chan"}, "*) Remove a source! [source name] : removes a source from the sources. example for \"Tumblr name\": http://fredrin.tumblr.com --> fredrin");
             $botClass->sendMsg($info->{"chan"}, "*) Check a catgirl! [url] : for debugging purposes. if in doubt, try launching 'Reload the catgirls!' command");
         }
     }
@@ -363,8 +364,8 @@ sub extractFromReddit{
     #until that moment... thank you for the catgirls, Alien!
     $post->description =~ /<br\/> <a href="(.*)">\[link\]/;
 
-    return ($post->title ." ". $1, 1);
-	#return ('fake', 0);
+    return ($post->title ." ". $1, 1) if $1 !~ /reddit/;  #no more self.subreddit links
+	return ('fake', 0);
 }
 
 sub extractFromTumblr{
@@ -378,7 +379,18 @@ sub extractFromTumblr{
     {
     	$post->description =~ m/http:\/\/([^>"]*)/i;
         #return (getLinkOnly($post->description), 1);
-        return ("http://".$1, 1)
+
+        #if a better quality exists, we'll provide it to users.
+        #it may be time-consuming on low-bandwidth servers.
+        #thank Gauss we do it just one time.
+        #TODO: refactor
+        my $cool_image=$1;
+        my $bigger_image=$1;
+        $bigger_image =~ s/_500\./_1280\./gi;
+        my $response=head("http://".$bigger_image);
+        $cool_image = $bigger_image if $response;
+
+        return ("http://".$cool_image, 1);
     }
     return ('fake', 0);
 }
