@@ -6,7 +6,9 @@
 # module: emoticon
 # purpose: 'cause writing emoticons can be difficult
 
-package Plib::modules::emoticon;
+package Plib::modules::emoticons;
+
+use feature 'say';
 
 my %emoticons=();
 
@@ -15,7 +17,7 @@ sub readEmoticons{
 	{ 
 	    local $/ = undef;
 		local *FILE;
-		open FILE, "<", './databases/emoticons/emoticon_archive.tsv';
+		open FILE, "<", './Plib/modules/databases/emoticons/emoticon_archive.tsv' or die "wtf $!";
 		$emoticon_archive = <FILE>;
 		close FILE;
 	}
@@ -26,8 +28,17 @@ sub readEmoticons{
 	}
 }
 
+sub printEmoticons{
+	#for debug purposes
+	foreach my $name (keys %emoticons)
+	{
+		say "$name => $emoticons{$name}";
+	}
+}
+
 sub saveNewEmoticon {
 	my ($name, $emoji) = @_;
+	#say "name:$name, emoji:$emoji";
 	$emoticons{$name} = $emoji;
 	&writeEmoticons;
 }
@@ -40,11 +51,11 @@ sub removeEmoticon {
 }
 
 sub writeEmoticons {
-	local $/ = undef;
-	local *FILE; open FILE, ">", './databases/emoticons/emoticon_archive.tsv';
+	#local $/ = undef;
+	local *FILE; open FILE, ">", './Plib/modules/databases/emoticons/emoticon_archive.tsv' or die "diocane $!";
 	foreach (keys %emoticons)
 	{
-		print FILE "$_\t$emoticons{$_}\n";
+		print FILE $_, "\t", $emoticons{$_}, "\n";
 	}
 	close FILE;
 }
@@ -54,23 +65,39 @@ sub atInit{}
 sub atWhile {
 	my ($self, $isTest, $botClass, $sent, $nick, $ident, $host) = @_;
 	return 1 if $isTest;
-	if ($nick and $ident and $host and $info = $botClass->matchMsg ($sent)) {
-		if ($info->{"message"} =~ /:(\w+):{0,1}/i) {
-			my $omgstr='>asks for an emoticon >writes it wrong => (╯ᐧ _ ᐧ ) ╯┻━┻ ';
 
-			if(exists $emoticon_archive{$1})
-			{
-				$omgstr=$emoticon_archive{$1};
-			}
-			$botClass->sendMsg ($info->{"chan"}, $omgstr);
-		}
-		elsif ($info->{"message"} =~ /^!emoticon add :(\w+):{0,1} (.*)$/){
+	readEmoticons() unless (scalar (keys %emoticons));
+
+	if ($nick and $ident and $host and $info = $botClass->matchMsg ($sent)) {
+		if ($info->{"message"} =~ /^!emoticon add :(\w+):{0,1} (.+)$/){
 			saveNewEmoticon($1, $2);
 			$botClass->sendMsg($info->{"chan"}, "added relation between $1 and $2 into emoticons. Thank you \\(^u^)/");
 		}
 		elsif ($info->{"message"} =~ /^!emoticon remove :(\w+):{0,1}$/){
 			removeEmoticon($1);
 			$botClass->sendMsg($info->{"chan"}, "removed emoticon $1.");
+		}
+		elsif($info->{"message"} =~ /^!emoticon show$/)
+		{
+			my $emoji_list="";
+			foreach (keys %emoticons)
+			{
+				$emoji_list.=" $_ => $emoticons{$_} ~";
+			}
+			$emoji_list =~ s/~$//;
+			$botClass->sendMsg($info->{"chan"}, "list of emoticons: ".$emoji_list);
+		}
+		elsif ($info->{"message"} =~ /:(\w+):{0,1}/i) {
+			my $omgstr='>asks for an emoticon >writes it wrong =>  ┻━┻ ︵ヽ(`Д´)ﾉ ';
+			#printEmoticons();
+			#say ">>>$1<<<";
+			if(exists $emoticons{$1})
+			{
+				#say 'esiste!';
+				#say "__>$emoticons{$1}<__";
+				$omgstr=$emoticons{$1};
+			}
+			$botClass->sendMsg ($info->{"chan"}, $omgstr);
 		}
 	}
 }
