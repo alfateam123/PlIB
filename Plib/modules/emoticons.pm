@@ -88,7 +88,7 @@ sub atWhile {
 			$botClass->sendMsg($info->{"chan"}, "list of emoticons: ".$emoji_list);
 		}
 		elsif ($info->{"message"} =~ /:(\w+):{0,1}/i) {
-			my $omgstr='>asks for an emoticon >writes it wrong =>  ┻━┻ ︵ヽ(`Д´)ﾉ ';
+			my $omgstr='';
 			#printEmoticons();
 			#say ">>>$1<<<";
 			if(exists $emoticons{$1})
@@ -96,8 +96,8 @@ sub atWhile {
 				#say 'esiste!';
 				#say "__>$emoticons{$1}<__";
 				$omgstr=$emoticons{$1};
-			}
-			$botClass->sendMsg ($info->{"chan"}, $omgstr);
+			        $botClass->sendMsg ($info->{"chan"}, $omgstr);
+                        }
 		}
 	}
 }
