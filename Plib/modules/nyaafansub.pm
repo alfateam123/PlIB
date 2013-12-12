@@ -9,6 +9,10 @@ use warnings;
 use JSON;
 use XML::FeedPP;
 use List::Util qw(shuffle); 
+#test
+use feature 'unicode_strings';
+
+
 my $hasLoaded=0;
 my @posts;
 my @shownPosts;
@@ -50,13 +54,13 @@ sub atWhile {
 
 sub getGroup{
   my $releaseName=shift;
-  $releaseName =~ /^\[([a-z\-\s0-9]+)\]/i;
+  $releaseName =~ /^\[([^\]]+)\]/i;
   $1;
 };
 
 sub epNum{
   my $releaseName=shift;
-  $releaseName =~ /([0-9]{2})/;
+  $releaseName =~ /([0-9]+)/;
   $1;
 }
 
@@ -64,12 +68,12 @@ sub izReleazed{
   my $show=shift;
 
   my $feed;
-  #eval{
+  eval{
     my $source="http://www.nyaa.se/?page=rss&cats=1_0&filter=2&term=${show}";
     print "$source\n";
     $feed = XML::FeedPP->new($source);
-  #};
-
+  };
+  
   for my $err ($@)
   {print '>>>'.$err."<<<\n";}
   return "y0u br0k3n nyaa. c00l" if ($@);
@@ -89,8 +93,8 @@ sub izReleazed{
     #business rules
     #don't show if the previous line was from the same group
     next if $poster eq $last_upper_group;
-    #don't show if raw/raws
-    next if $poster =~ /raw(s){0,1}/i;
+    #don't show if raw/raws (it seems we're covering every case)
+    next if $poster =~ /raw(s){0,1}|caps/i;
     
     $last_upper_group=$poster;
     $release_counter++;
