@@ -385,10 +385,10 @@ sub extractFromTumblr{
         #thank Gauss we do it just one time.
         #TODO: refactor
         my $cool_image=$1;
-        my $bigger_image=$1;
-        $bigger_image =~ s/_500\./_1280\./gi;
-        my $response=head("http://".$bigger_image);
-        $cool_image = $bigger_image if $response;
+        #my $bigger_image=$1;
+        #$bigger_image =~ s/_500\./_1280\./gi;
+        #my $response=head("http://".$bigger_image);
+        #$cool_image = $bigger_image if $response;
 
         return ("http://".$cool_image, 1);
     }
