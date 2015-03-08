@@ -43,11 +43,15 @@ sub atWhile {
 	if ($nick and $ident and $host and $info = $botClass->matchMsg ($sent)){
     if ($info->{"message"} =~ /released\? help/i
         ) {
-        $botClass->sendMsg($info->{"chan"}, "released? <show>");
+        $botClass->sendMsg($info->{"chan"}, "released? <show> : looks for <show> on nyaa.se. It returns results from 'trusted' fansubs.");
+        $botClass->sendMsg($info->{"chan"}, "released_audio? <audio> : looks for <audio> on nyaa.se. It returns results for 'lossless' audio");
     }
-    elsif ($info->{"message"} =~ /released\? ([a-z\s0-9]+)$/i
+    elsif ($info->{"message"} =~ /released\? (.+)$/i
         ) {
-        $botClass->sendMsg($info->{"chan"}, izReleazed($1));
+        $botClass->sendMsg($info->{"chan"}, izReleazedFansub($1));
+    }
+    elsif ($info->{"message"} =~  /released_audio\? (.+)$/i){
+        $botClass->sendMsg($info->{"chan"}, izReleazedAudio($1));
     }
   }
 }
@@ -64,12 +68,23 @@ sub epNum{
   $1;
 }
 
+sub izReleazedAudio{
+  my $query=shift;
+  izReleazed($query, '3_14'); #lossless audio
+}
+
+sub izReleazedFansub{
+  my $query=shift;
+  izReleazed($query, '1_0'); #trusted fansubs
+}
+
 sub izReleazed{
   my $show=shift;
+  my $nyaaCat=shift;
 
   my $feed;
   eval{
-    my $source="http://www.nyaa.se/?page=rss&cats=1_0&filter=2&term=${show}";
+    my $source="http://www.nyaa.se/?page=rss&cats=${nyaaCat}&filter=2&term=${show}";
     print "$source\n";
     $feed = XML::FeedPP->new($source);
   };
