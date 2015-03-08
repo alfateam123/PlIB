@@ -87,18 +87,24 @@ sub atWhile {
 			$emoji_list =~ s/~$//;
 			$botClass->sendMsg($info->{"chan"}, "list of emoticons: ".$emoji_list);
 		}
-		elsif ($info->{"message"} =~ /:(\w+):{0,1}/i) {
-			my $omgstr='';
+		elsif ($info->{"message"} =~ /:(\w+):?/ig) {
+			#my $omgstr='';
 			#printEmoticons();
 			#say ">>>$1<<<";
-			if(exists $emoticons{$1})
-			{
-				#say 'esiste!';
-				#say "__>$emoticons{$1}<__";
-				$omgstr=$emoticons{$1};
-			        $botClass->sendMsg ($info->{"chan"}, $omgstr);
-                        }
-		}
-	}
+			#if(exists $emoticons{$1})
+			#{
+			#	#say 'esiste!';
+			#	#say "__>$emoticons{$1}<__";
+			#	$omgstr=$emoticons{$1};
+			#        $botClass->sendMsg ($info->{"chan"}, $omgstr);
+                        #}
+                        my $woot = $info->{"message"};
+                        while($woot =~ /:(\w+):?/ig){
+                             my $related_emoji  = $1;
+                             $related_emoji = $emoticons{$1} if exists $emoticons{$1};
+                             $woot =~ s/:$1:?/$related_emoji/ if $related_emoji ne $1;
+                          }
+                        $botClass->sendMsg($info->{"chan"}, $woot) if $woot ne $info->{"message"};
+	}}
 }
 1;
