@@ -312,7 +312,7 @@ sub doWhile {
 				if (exists $self->{"flood"}->{$host} and $self->{"flood"}->{$host}->[0] >= 3 and not exists $self->{"blacklist"}->{$host}) {
 					print $self->getPrefix . "[FLOOD] Banning ${nick} (${host})\n";
 					#$self->sendMsg ($self->getAllChannels (",", 0), "Notice: ${nick} (hostmask: ${host}) was blacklisted for flooding (blacklisted for 120 seconds)");
-					$self->{"blacklist"}->{$host} = time;
+					#$self->{"blacklist"}->{$host} = time;
 					&{$self->evfunc("floodchk_ban")} ($self, $nick, $ident, $host);
 				}
 				

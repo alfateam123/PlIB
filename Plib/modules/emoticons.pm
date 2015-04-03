@@ -9,6 +9,7 @@
 package Plib::modules::emoticons;
 
 use feature 'say';
+use Encode qw(decode encode);
 
 my %emoticons=();
 
@@ -82,10 +83,15 @@ sub atWhile {
 			my $emoji_list="";
 			foreach (keys %emoticons)
 			{
-				$emoji_list.=" $_ => $emoticons{$_} ~";
+				$emoji_list.=" $_ => ".decode('UTF-8', $emoticons{$_}, ENCODE::FB_CROAK)." ~";
 			}
 			$emoji_list =~ s/~$//;
-			$botClass->sendMsg($info->{"chan"}, "list of emoticons: ".$emoji_list);
+			while(length($emoji_list) > 200){
+                          #$emoji_list = substr($emoji_list, 0, 199);
+                          $botClass->sendMsg($info->{"chan"}, substr($emoji_list, 0, 199) );
+                          $emoji_list = substr($emoji_list, 199)
+                        };
+                        $botClass->sendMsg($info->{"chan"}, $emoji_list);
 		}
 		elsif ($info->{"message"} =~ /:(\w+):?/ig) {
 			#my $omgstr='';
