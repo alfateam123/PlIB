@@ -70,15 +70,15 @@ sub atWhile {
 	readEmoticons() unless (scalar (keys %emoticons));
 
 	if ($nick and $ident and $host and $info = $botClass->matchMsg ($sent)) {
-		if ($info->{"message"} =~ /^!emoticon add :(\w+):{0,1} (.+)$/){
-			saveNewEmoticon($1, $2);
-			$botClass->sendMsg($info->{"chan"}, "added relation between $1 and $2 into emoticons. Thank you \\(^u^)/");
+		if ($info->{"message"} =~ /^!(emoticon|emoticons|emoji|emojis) add :(\w+):{0,1} (.+)$/){
+			saveNewEmoticon($2, $3);
+			$botClass->sendMsg($info->{"chan"}, "added relation between $2 and $3 into emoticons. Thank you \\(^u^)/");
 		}
-		elsif ($info->{"message"} =~ /^!emoticon remove :(\w+):{0,1}$/){
-			removeEmoticon($1);
-			$botClass->sendMsg($info->{"chan"}, "removed emoticon $1.");
+		elsif ($info->{"message"} =~ /^!(emoticon|emoticons|emoji|emojis) remove :(\w+):{0,1}$/){
+			removeEmoticon($2);
+			$botClass->sendMsg($info->{"chan"}, "removed emoticon $2.");
 		}
-		elsif($info->{"message"} =~ /^!emoticon show$/)
+		elsif($info->{"message"} =~ /^!(emoticon|emoticons|emoji|emojis) (show|list)$/)
 		{
 			my $emoji_list="";
 			foreach (keys %emoticons)
